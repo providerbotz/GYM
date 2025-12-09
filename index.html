@@ -1,0 +1,1598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Gym App</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;700;900&display=swap" rel="stylesheet">
+    
+    <!-- ADD FIREBASE SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <style>
+        /* All previous CSS remains the same */
+        :root {
+            --font-main: 'Poppins', sans-serif;
+            --bg-dark: #0c0b1f;
+            --bg-medium: #161625;
+            --bg-light: #1d222e;
+            --card-color: #2c2c3e;
+            --primary-text-color: #ffffff;
+            --secondary-text-color: rgba(255, 255, 255, 0.5);
+            --accent-red: #f23a53;
+            --accent-orange: #e85d04;
+            --primary-action: #007bff;
+            --healthy-green: #25d366;
+        }
+        body { 
+            background-color: var(--bg-dark); 
+            font-family: var(--font-main); 
+            color: var(--primary-text-color); 
+            margin: 0; 
+            padding: 0; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            box-sizing: border-box; 
+            overflow: hidden;
+            background-image: radial-gradient(circle at 10% 20%, rgba(242, 58, 83, 0.1) 0%, transparent 50%),
+                              radial-gradient(circle at 90% 80%, rgba(0, 123, 255, 0.1) 0%, transparent 50%);
+        }
+        .app-shell { 
+            width: 100%; 
+            max-width: 450px; 
+            height: 100vh; 
+            max-height: 850px; 
+            position: relative; 
+            overflow: hidden; 
+            display: flex; 
+            flex-direction: column; 
+            background-color: var(--bg-dark);
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+            border-radius: 20px;
+            overflow: hidden;
+        }
+        .page-container { 
+            flex-grow: 1; 
+            overflow-y: auto; 
+            overflow-x: hidden; 
+            padding-bottom: 80px; 
+            display: flex; 
+            flex-direction: column;
+            scrollbar-width: none; /* Hide scrollbar for Firefox */
+        }
+        .page-container::-webkit-scrollbar {
+            display: none; /* Hide scrollbar for Chrome, Safari, Edge */
+        }
+        .page { 
+            display: none; 
+            padding: 20px; 
+            box-sizing: border-box; 
+            flex-direction: column; 
+            flex-grow: 1; 
+            width: 100%;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+        .page.active { 
+            display: flex; 
+            opacity: 1;
+            transform: translateY(0);
+        }
+        #splash-screen { 
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+        #splash-screen .header-section { 
+            padding: 50px 30px 0 30px; 
+            position: relative; 
+            z-index: 3; 
+            text-align: center;
+            animation: fadeInDown 1s ease forwards;
+        }
+        #splash-screen h1 { 
+            font-size: 36px; 
+            font-weight: 900; 
+            color: var(--primary-text-color); 
+            margin-top: -30%; 
+            line-height: 1.3; 
+            text-shadow: 1px 1px 5px rgba(0, 0, 0, 0.3);
+            animation: scaleIn 1.2s ease forwards;
+        }
+        #splash-screen .at-home-badge { 
+            position: relative; 
+            display: inline-block; 
+            padding: 12px 30px; 
+            color: var(--primary-text-color); 
+            font-weight: 700; 
+            font-size: 16px; 
+            z-index: 1; 
+            margin-top: 10px; 
+            margin-right:30%;
+            animation: pulse 2s infinite;
+        }
+        #splash-screen .at-home-badge::before { 
+            content: ''; 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: linear-gradient(45deg, #f23a53, #f85f3b); 
+            transform: skewX(-20deg); 
+            z-index: -1; 
+            border-radius: 8px; 
+            box-shadow: 0px 4px 20px rgba(242, 58, 83, 0.4);
+        }
+        #splash-screen .image-container { 
+            position: absolute; 
+            bottom: -15%; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            width: 120%; 
+            max-width: 600px; 
+            z-index: 1;
+            animation: float 3s ease-in-out infinite;
+        }
+        #splash-screen .image-container img { 
+            width: 100%; 
+            display: block; 
+            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.3));
+        }
+        #splash-screen::after { 
+            content: ''; 
+            position: absolute; 
+            bottom: 0; 
+            left: 0; 
+            right: 0; 
+            height: 40%; 
+            background: linear-gradient(to top, #1d222e 20%, transparent); 
+            z-index: 2; 
+        }
+        #splash-screen .footer-credit { 
+            position: absolute; 
+            bottom: 30px; 
+            width: 100%; 
+            text-align: center; 
+            color: var(--secondary-text-color); 
+            font-size: 14px; 
+            font-weight: 400; 
+            z-index: 3;
+            animation: fadeIn 1.5s ease forwards;
+        }
+        #focus-areas-screen h2 { 
+            font-size: 28px; 
+            font-weight: bold; 
+            margin-bottom: 25px; 
+            text-align: left;
+            background: linear-gradient(90deg, #f23a53, #e85d04);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        #focus-areas-screen .exercise-grid { 
+            display: grid; 
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 15px; 
+        }
+        #focus-areas-screen .exercise-item { 
+            background-color: var(--card-color); 
+            border-radius: 12px; 
+            padding: 15px; 
+            cursor: pointer; 
+            position: relative; 
+            overflow: hidden; 
+            transition: all 0.3s ease;
+            transform: translateY(0);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        #focus-areas-screen .exercise-item:hover { 
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            background-color: #3a3a5a;
+        }
+        #focus-areas-screen .exercise-item img { 
+            width: 100%; 
+            max-width: 130px; 
+            display: block; 
+            margin: 0 auto;
+            transition: transform 0.3s ease;
+        }
+        #focus-areas-screen .exercise-item:hover img {
+            transform: scale(1.05);
+        }
+        #focus-areas-screen .exercise-item p { 
+            margin-top: 10px; 
+            margin-bottom: 5px; 
+            font-weight: bold; 
+            font-size: 16px; 
+            text-align: center;
+            transition: color 0.3s ease;
+        }
+        #focus-areas-screen .exercise-item:hover p {
+            color: var(--accent-orange);
+        }
+        
+        /* --- INTEGRATED LEVEL SCREEN STYLES --- */
+        #levels-screen .main-container { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 25px; 
+        }
+        #levels-screen .header-text { 
+            text-align: center; 
+            margin-bottom: 15px; 
+        }
+        #levels-screen .header-text .easy-start { 
+            font-size: 28px; 
+            font-weight: 700; 
+            margin: 0; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px;
+            background: linear-gradient(90deg, #f23a53, #e85d04);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        #levels-screen .level-card { 
+            position: relative; 
+            height: 160px; 
+            border-radius: 20px; 
+            padding: 20px; 
+            box-sizing: border-box; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: flex-start; 
+            cursor: pointer; 
+            transition: all 0.3s ease;
+            transform: translateY(0);
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        #levels-screen .level-card:hover { 
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+        }
+        #levels-screen .level-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--accent-orange) 0%, #c0392b 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 0;
+        }
+        #levels-screen .level-card:hover::before {
+            opacity: 1;
+        }
+        #levels-screen .level-card .level-image { 
+            position: absolute; 
+            bottom: 0; 
+            z-index: 1; 
+            transition: transform 0.3s ease;
+        }
+        #levels-screen .level-card:hover .level-image {
+            transform: scale(1.05);
+        }
+        #levels-screen .level-info { 
+            position: relative; 
+            z-index: 2; 
+        }
+        #levels-screen .level-info h2 { 
+            font-size: 1.5rem; 
+            margin: 0 0 10px 0; 
+            font-weight: 700; 
+            text-transform: uppercase;
+            transition: color 0.3s ease;
+        }
+        #levels-screen .level-card:hover .level-info h2 {
+            color: white;
+        }
+        #levels-screen .progress-bar { 
+            display: flex; 
+            height: 8px; 
+        }
+        #levels-screen .progress-segment { 
+            flex-basis: 50px; 
+            height: 100%; 
+            margin-right: 5px; 
+            background-color: rgba(255, 255, 255, 0.3); 
+            transform: skewX(-25deg);
+            transition: background-color 0.3s ease;
+        }
+        #levels-screen .progress-segment.filled { 
+            background-color: #ffffff; 
+        }
+        #levels-screen .level-card:hover .progress-segment.filled {
+            background-color: white;
+        }
+        #levels-screen #beginner { 
+            background-color: #3a3a5a; 
+        }
+        #levels-screen #beginner .level-image { 
+            right: -10px; 
+            height: 190px; 
+        }
+        #levels-screen #intermediate { 
+            background-color: #2c2c54; 
+        }
+        #levels-screen #intermediate .level-image { 
+            left: -30px; 
+            bottom: 0; 
+            height: 205px; 
+        }
+        #levels-screen #intermediate .level-info { 
+            align-self: flex-end; 
+            text-align: right; 
+        }
+        #levels-screen #intermediate .progress-bar { 
+            justify-content: flex-end; 
+        }
+        #levels-screen #advanced { 
+            background-color: #3a3a5a; 
+        }
+        #levels-screen #advanced .level-image { 
+            right: 0px; 
+            height: 200px; 
+        }
+
+        @media (max-width: 480px) {
+            #levels-screen .level-card { height: 140px; padding: 15px; }
+            #levels-screen .level-info h2 { font-size: 1.3rem; }
+            #levels-screen #beginner .level-image { height: 165px; right: -20px; }
+            #levels-screen #intermediate .level-image { height: 180px; left: -35px; }
+            #levels-screen #advanced .level-image { height: 175px; right: -15px; }
+        }
+        /* --- END INTEGRATED LEVEL SCREEN STYLES --- */
+
+        .workout-list-page .header { 
+            display: flex; 
+            align-items: center; 
+            margin-bottom: 20px;
+        }
+        .workout-list-page .back-button { 
+            background: none; 
+            border: none; 
+            color: white; 
+            font-size: 16px; 
+            font-weight: 300; 
+            cursor: pointer; 
+            padding: 10px 10px 10px 0;
+            display: flex;
+            align-items: center;
+            transition: transform 0.2s ease;
+        }
+        .workout-list-page .back-button:hover {
+            transform: translateX(-5px);
+        }
+        .workout-list-page .workout-title { 
+            text-align: center; 
+            flex-grow: 1; 
+            font-size: 28px; 
+            margin: 0; 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            padding-right: 30px;
+            background: linear-gradient(90deg, #f23a53, #e85d04);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .workout-list-page .exercise-list { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px; 
+            margin-top: 25px; 
+        }
+        .workout-list-page .list-exercise-item { 
+            display: flex; 
+            align-items: center; 
+            background-color: var(--card-color); 
+            padding: 15px; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            transition: all 0.3s ease;
+            transform: translateX(0);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .workout-list-page .list-exercise-item:hover { 
+            background-color: #4a4a6a;
+            transform: translateX(5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        }
+        .workout-list-page .list-exercise-item img { 
+            width: 60px; 
+            height: 60px; 
+            border-radius: 8px; 
+            object-fit: cover; 
+            margin-right: 15px; 
+            background-color: #fff;
+            transition: transform 0.3s ease;
+        }
+        .workout-list-page .list-exercise-item:hover img {
+            transform: scale(1.05);
+        }
+        .workout-list-page .exercise-info h4 { 
+            margin: 0 0 5px 0; 
+            font-size: 16px; 
+            font-weight: 700;
+            transition: color 0.3s ease;
+        }
+        .workout-list-page .list-exercise-item:hover .exercise-info h4 {
+            color: var(--accent-orange);
+        }
+        .workout-list-page .exercise-info p { 
+            margin: 0; 
+            font-size: 14px; 
+            color: #a0a0b5; 
+        }
+        #plan-screen .plan-header { 
+            font-size: 28px; 
+            font-weight: 700; 
+            margin-bottom: 20px;
+            background: linear-gradient(90deg, #f23a53, #e85d04);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        #plan-screen .week-container { 
+            margin-bottom: 25px; 
+        }
+        #plan-screen .week-header { 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            margin-bottom: 15px; 
+        }
+        #plan-screen .week-header h3 { 
+            font-size: 20px; 
+            font-weight: 700; 
+            margin: 0;
+            color: var(--secondary-text-color);
+        }
+        #plan-screen .day-grid { 
+            display: grid; 
+            grid-template-columns: repeat(7, 1fr); 
+            gap: 10px; 
+        }
+        #plan-screen .day-card { 
+            background-color: var(--bg-light); 
+            border-radius: 8px; 
+            padding: 12px 8px; 
+            text-align: center; 
+            cursor: pointer; 
+            border: 2px solid transparent; 
+            transition: all 0.3s ease;
+            transform: scale(1);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+        #plan-screen .day-card:hover {
+            transform: scale(1.05);
+            border-color: var(--accent-orange);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        #plan-screen .day-card.completed { 
+            background-color: var(--healthy-green) !important; 
+            color: white; 
+            border: 2px solid white;
+            animation: bounce 0.5s ease;
+        }
+        #plan-screen .day-card.completed .day-focus, #plan-screen .day-card.completed .day-label { 
+            color: white; 
+        }
+        #plan-screen .day-card .day-label { 
+            font-size: 18px; 
+            font-weight: 700; 
+            margin-bottom: 5px; 
+        }
+        #plan-screen .day-card .day-focus { 
+            font-size: 11px; 
+            color: var(--secondary-text-color); 
+            text-transform: uppercase; 
+        }
+        #tracker-screen .report-header { 
+            font-size: 20px; 
+            font-weight: 700; 
+            color: var(--secondary-text-color); 
+            margin: 0 0 20px 0; 
+            text-align: left; 
+            text-transform: uppercase; 
+        }
+        .report-card { 
+            background-color: var(--bg-light); 
+            border-radius: 15px; 
+            padding: 20px; 
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease;
+        }
+        .report-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+        .report-card h3 { 
+            margin: 0 0 20px 0; 
+            font-size: 14px; 
+            font-weight: 700; 
+            color: var(--secondary-text-color); 
+        }
+        .weight-summary { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 25px; 
+        }
+        .weight-summary .value { 
+            font-size: 32px; 
+            font-weight: 700;
+            transition: color 0.3s ease;
+        }
+        .weight-summary:hover .value {
+            color: var(--accent-orange);
+        }
+        .graph-container { 
+            position: relative; 
+            height: 150px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .graph-tooltip { 
+            position: absolute; 
+            top: 45px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            background: linear-gradient(to bottom, #f05a4f, #d52a2a); 
+            color: white; 
+            padding: 8px 15px; 
+            border-radius: 8px; 
+            font-size: 22px; 
+            font-weight: 700;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            animation: pulse 2s infinite;
+        }
+        #exercise-player-screen { 
+            background-color: var(--bg-medium); 
+            text-align: center; 
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        #exercise-player-screen .header { 
+            padding: 5px; 
+            display: flex; 
+            justify-content: flex-start;
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+        }
+        #exercise-player-screen .player-back-button { 
+            background: rgba(0,0,0,0.5);
+            border: none; 
+            color: white; 
+            font-size: 16px; 
+            cursor: pointer;
+            padding: 8px 15px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        #exercise-player-screen .player-back-button:hover {
+            background: rgba(0,0,0,0.7);
+            transform: translateX(-5px);
+        }
+        #exercise-player-screen #player-exercise-name { 
+            font-size: 32px; 
+            margin: 10px 0 20px 0; 
+            font-weight: 700;
+            background: linear-gradient(90deg, #f23a53, #e85d04);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        #exercise-player-screen #exercise-video { 
+            width: 100%; 
+            max-height: 40vh; 
+            border-radius: 15px; 
+            margin-bottom: 25px; 
+            background-color: #000;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        #exercise-player-screen .timer-container {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 30px;
+        }
+        #exercise-player-screen #timer-display { 
+            font-size: 60px; 
+            font-weight: 700;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+        }
+        #exercise-player-screen .progress-ring {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+        #exercise-player-screen .progress-ring-circle {
+            stroke: rgba(255,255,255,0.2);
+            stroke-width: 8;
+            fill: transparent;
+            r: 90;
+            cx: 100;
+            cy: 100;
+        }
+        #exercise-player-screen .progress-ring-progress {
+            stroke: var(--accent-orange);
+            stroke-width: 8;
+            fill: transparent;
+            r: 90;
+            cx: 100;
+            cy: 100;
+            stroke-dasharray: 565.48;
+            stroke-dashoffset: 565.48;
+            transition: stroke-dashoffset 1s linear;
+        }
+        #exercise-player-screen #done-button { 
+            width: 100%; 
+            padding: 15px; 
+            font-size: 18px; 
+            font-weight: 700; 
+            color: white; 
+            background: linear-gradient(45deg, #f23a53, #e85d04); 
+            border: none; 
+            border-radius: 10px; 
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        #exercise-player-screen #done-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        }
+        .bottom-nav { 
+            position: absolute; 
+            bottom: 0; 
+            left: 0; 
+            right: 0; 
+            height: 70px; 
+            background-color: var(--bg-medium); 
+            display: flex; 
+            justify-content: space-around; 
+            align-items: center; 
+            z-index: 1000;
+            box-shadow: 0 -5px 15px rgba(0,0,0,0.3);
+        }
+        .nav-button { 
+            background: none; 
+            border: none; 
+            color: var(--secondary-text-color); 
+            cursor: pointer; 
+            font-size: 14px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            gap: 4px; 
+            flex-grow: 1;
+            transition: all 0.3s ease;
+            padding: 10px 0;
+        }
+        .nav-button:hover {
+            color: var(--accent-orange);
+        }
+        .nav-button.active { 
+            color: var(--accent-red); 
+        }
+        .nav-button .icon { 
+            font-size: 24px;
+            transition: transform 0.3s ease;
+        }
+        .nav-button:hover .icon {
+            transform: translateY(-3px);
+        }
+        
+        /* --- AUTHENTICATION MODAL STYLES --- */
+        #auth-modal { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background-color: rgba(0, 0, 0, 0.8); 
+            display: none; 
+            justify-content: center; 
+            align-items: center; 
+            z-index: 9999;
+            backdrop-filter: blur(5px);
+        }
+        #auth-modal.visible { 
+            display: flex; 
+            animation: fadeIn 0.3s ease;
+        }
+        .auth-container { 
+            background-color: var(--bg-light); 
+            padding: 30px; 
+            border-radius: 15px; 
+            width: 80%; 
+            max-width: 350px; 
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            animation: slideUp 0.3s ease;
+        }
+        .auth-container h2 { 
+            margin-top: 0;
+            background: linear-gradient(90deg, #f23a53, #e85d04);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .auth-container .form-group { 
+            margin-bottom: 15px; 
+            text-align: left; 
+        }
+        .auth-container input { 
+            width: 100%; 
+            padding: 12px; 
+            background-color: var(--bg-dark); 
+            border: 1px solid var(--card-color); 
+            border-radius: 8px; 
+            color: white; 
+            font-family: var(--font-main); 
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+        .auth-container input:focus {
+            outline: none;
+            border-color: var(--accent-orange);
+            box-shadow: 0 0 0 2px rgba(232, 93, 4, 0.3);
+        }
+        .auth-container button { 
+            width: 100%; 
+            padding: 12px; 
+            font-size: 16px; 
+            font-weight: 700; 
+            color: white; 
+            background: linear-gradient(45deg, #f23a53, #e85d04); 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            margin-top: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .auth-container button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        }
+        .auth-container .toggle-link { 
+            color: var(--accent-red); 
+            cursor: pointer; 
+            font-size: 14px; 
+            margin-top: 20px; 
+            display: inline-block;
+            transition: color 0.3s ease;
+        }
+        .auth-container .toggle-link:hover {
+            color: var(--accent-orange);
+        }
+        .auth-container .auth-error { 
+            color: var(--accent-red); 
+            margin-top: 15px; 
+            font-size: 14px; 
+            min-height: 20px;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translateY(30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes scaleIn {
+            from {
+                transform: scale(0.9);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(-10px); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-shell">
+        <div class="page-container">
+
+            <main id="splash-screen" class="page active">
+                <div class="header-section">
+                    <h1>Muscle Up<br><span style="color:yellow">Fat Down</span></h1>
+                    <div class="at-home-badge">AT HOME!</div>
+                </div>
+                <div class="image-container">
+                    <img src="assets/exercise.jpg" alt="Fitness models">
+                </div>
+                <div class="footer-credit">developed by javagoat</div>
+            </main>
+
+            <main id="focus-areas-screen" class="page">
+                <h2>Hit Your Focus Areas</h2>
+                <div class="exercise-grid">
+                    <div class="exercise-item" data-name="Full Body" data-video="video/jumping_jacks.mp4" data-duration="30">
+                        <img src="assets/full_body.png" alt="Full Body">
+                        <p>FULL BODY</p>
+                    </div>
+                    <div class="exercise-item" data-name="Abs" data-video="video/side_abdomen.mp4" data-duration="30">
+                        <img src="assets/abs.png" alt="Abs">
+                        <p>ABS</p>
+                    </div>
+                    <div class="exercise-item" data-name="Chest" data-video="video/pushup.mp4" data-duration="30">
+                        <img src="assets/chest.png" alt="Chest">
+                        <p>CHEST</p>
+                    </div>
+                    <div class="exercise-item" data-name="Arms" data-video="video/biceps.mp4" data-duration="30">
+                        <img src="assets/arms.png" alt="Arms">
+                        <p>ARMS</p>
+                    </div>
+                    <div class="exercise-item" data-name="Legs" data-video="video/squat.mp4" data-duration="30">
+                        <img src="assets/leg.png" alt="Leg">
+                        <p>LEG</p>
+                    </div>
+                    <div class="exercise-item" data-name="Back" data-video="video/pullup.mp4" data-duration="30">
+                        <img src="assets/back.png" alt="Back">
+                        <p>BACK</p>
+                    </div>
+                </div>
+            </main>
+            
+            <!-- ================================== -->
+            <!--   INTEGRATED LEVEL SELECTION SCREEN    -->
+            <!-- ================================== -->
+            <main id="levels-screen" class="page">
+                <div class="main-container">
+                    <div class="header-text">
+                        <h1 class="easy-start">Easy Start</h1>
+                    </div>
+                    <div class="level-card" id="beginner" data-target="beginner-workout-page">
+                        <div class="level-info">
+                            <h2>Beginner</h2>
+                            <div class="progress-bar">
+                                <div class="progress-segment filled"></div>
+                                <div class="progress-segment"></div>
+                                <div class="progress-segment"></div>
+                            </div>
+                        </div>
+                        <img src="assets/beginner.png" class="level-image" alt="Beginner fitness">
+                    </div>
+                    <div class="level-card" id="intermediate" data-target="intermediate-workout-page">
+                        <div class="level-info">
+                            <h2>Intermediate</h2>
+                            <div class="progress-bar">
+                                <div class="progress-segment filled"></div>
+                                <div class="progress-segment filled"></div>
+                                <div class="progress-segment"></div>
+                            </div>
+                        </div>
+                        <img src="assets/intermediate.png" class="level-image" alt="Intermediate fitness">
+                    </div>
+                    <div class="level-card" id="advanced" data-target="advanced-workout-page">
+                         <div class="level-info">
+                            <h2>Advanced</h2>
+                            <div class="progress-bar">
+                                <div class="progress-segment filled"></div>
+                                <div class="progress-segment filled"></div>
+                                <div class="progress-segment filled"></div>
+                            </div>
+                        </div>
+                        <img src="assets/advanced.png" class="level-image" alt="Advanced fitness">
+                    </div>
+                </div>
+            </main>
+
+            <!-- ================================== -->
+            <!--     RESTORED 28-DAY PLAN SCREEN      -->
+            <!-- ================================== -->
+            <main id="plan-screen" class="page">
+                <h2 class="plan-header">28-Day Fitness Plan</h2>
+                <!-- WEEK 1 -->
+                <div class="week-container">
+                    <div class="week-header">
+                        <h3>WEEK 1</h3>
+                    </div>
+                    <div class="day-grid">
+                        <div class="day-card" data-day="1" data-name="Chest Press" data-reps="12" data-video="video/pushup.mp4">
+                            <div class="day-label">1</div>
+                            <div class="day-focus">Chest</div>
+                        </div>
+                        <div class="day-card" data-day="2" data-name="Crunches" data-reps="20" data-video="video/side_abdomen.mp4">
+                            <div class="day-label">2</div>
+                            <div class="day-focus">Abs</div>
+                        </div>
+                        <div class="day-card" data-day="3" data-name="Bicep Curls" data-reps="15" data-video="video/biceps.mp4">
+                            <div class="day-label">3</div>
+                            <div class="day-focus">Arm</div>
+                        </div>
+                        <div class="day-card" data-day="4" data-name="Incline Pushups" data-reps="12" data-video="video/pushup.mp4">
+                            <div class="day-label">4</div>
+                            <div class="day-focus">Chest</div>
+                        </div>
+                        <div class="day-card" data-name="Rest">
+                            <div class="day-label">5</div>
+                            <div class="day-focus">Rest</div>
+                        </div>
+                        <div class="day-card" data-day="6" data-name="Leg Raises" data-reps="20" data-video="video/side_abdomen.mp4">
+                            <div class="day-label">6</div>
+                            <div class="day-focus">Abs</div>
+                        </div>
+                        <div class="day-card" data-day="7" data-name="Tricep Dips" data-reps="15" data-video="video/tricep.mp4">
+                            <div class="day-label">7</div>
+                            <div class="day-focus">Arm</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- WEEK 2 -->
+                <div class="week-container">
+                    <div class="week-header">
+                        <h3>WEEK 2</h3>
+                    </div>
+                    <div class="day-grid">
+                        <div class="day-card" data-day="8" data-name="Squats" data-reps="20" data-video="video/squat.mp4">
+                            <div class="day-label">8</div>
+                            <div class="day-focus">Legs</div>
+                        </div>
+                        <div class="day-card" data-day="9" data-name="Pull-ups" data-reps="8" data-video="video/pullup.mp4">
+                            <div class="day-label">9</div>
+                            <div class="day-focus">Back</div>
+                        </div>
+                        <div class="day-card" data-day="10" data-name="Jumping Jacks" data-duration="45" data-video="video/jumping_jacks.mp4">
+                            <div class="day-label">10</div>
+                            <div class="day-focus">Full Body</div>
+                        </div>
+                        <div class="day-card" data-day="11" data-name="Plank" data-duration="45" data-video="video/side_abdomen.mp4">
+                            <div class="day-label">11</div>
+                            <div class="day-focus">Abs</div>
+                        </div>
+                        <div class="day-card" data-name="Rest">
+                            <div class="day-label">12</div>
+                            <div class="day-focus">Rest</div>
+                        </div>
+                        <div class="day-card" data-day="13" data-name="Pushups" data-reps="25" data-video="video/pushup.mp4">
+                            <div class="day-label">13</div>
+                            <div class="day-focus">Chest</div>
+                        </div>
+                        <div class="day-card" data-day="14" data-name="Bicep Curls" data-reps="18" data-video="video/biceps.mp4">
+                            <div class="day-label">14</div>
+                            <div class="day-focus">Arm</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- WEEK 3 -->
+                 <div class="week-container">
+                    <div class="week-header">
+                        <h3>WEEK 3</h3>
+                    </div>
+                     <div class="day-grid">
+                        <div class="day-card" data-day="15" data-name="Leg Press" data-reps="15" data-video="video/squat.mp4">
+                            <div class="day-label">15</div>
+                            <div class="day-focus">Legs</div>
+                        </div>
+                        <div class="day-card" data-day="16" data-name="Crunches" data-reps="30" data-video="video/side_abdomen.mp4">
+                            <div class="day-label">16</div>
+                            <div class="day-focus">Abs</div>
+                        </div>
+                        <div class="day-card" data-day="17" data-name="Wide Pushups" data-reps="20" data-video="video/pushup.mp4">
+                            <div class="day-label">17</div>
+                            <div class="day-focus">Chest</div>
+                        </div>
+                        <div class="day-card" data-day="18" data-name="Pull-ups" data-reps="10" data-video="video/pullup.mp4">
+                            <div class="day-label">18</div>
+                            <div class="day-focus">Back</div>
+                        </div>
+                        <div class="day-card" data-name="Rest">
+                            <div class="day-label">19</div>
+                            <div class="day-focus">Rest</div>
+                        </div>
+                        <div class="day-card" data-day="20" data-name="Tricep Dips" data-reps="20" data-video="video/tricep.mp4">
+                            <div class="day-label">20</div>
+                            <div class="day-focus">Arm</div>
+                        </div>
+                        <div class="day-card" data-day="21" data-name="Jumping Jacks" data-duration="60" data-video="video/jumping_jacks.mp4">
+                            <div class="day-label">21</div>
+                            <div class="day-focus">Full Body</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- WEEK 4 -->
+                <div class="week-container">
+                    <div class="week-header">
+                        <h3>WEEK 4</h3>
+                    </div>
+                     <div class="day-grid">
+                        <div class="day-card" data-day="22" data-name="Squat Jumps" data-reps="25" data-video="video/squat.mp4">
+                            <div class="day-label">22</div>
+                            <div class="day-focus">Legs</div>
+                        </div>
+                        <div class="day-card" data-day="23" data-name="Pushups" data-reps="30" data-video="video/pushup.mp4">
+                            <div class="day-label">23</div>
+                            <div class="day-focus">Chest</div>
+                        </div>
+                        <div class="day-card" data-day="24" data-name="Plank" data-duration="75" data-video="video/side_abdomen.mp4">
+                            <div class="day-label">24</div>
+                            <div class="day-focus">Abs</div>
+                        </div>
+                        <div class="day-card" data-day="25" data-name="Pull-ups" data-reps="12" data-video="video/pullup.mp4">
+                            <div class="day-label">25</div>
+                            <div class="day-focus">Back</div>
+                        </div>
+                        <div class="day-card" data-name="Rest">
+                            <div class="day-label">26</div>
+                            <div class="day-focus">Rest</div>
+                        </div>
+                        <div class="day-card" data-day="27" data-name="Bicep Curls" data-reps="20" data-video="video/biceps.mp4">
+                            <div class="day-label">27</div>
+                            <div class="day-focus">Arm</div>
+                        </div>
+                        <div class="day-card" data-day="28" data-name="Jumping Jacks" data-duration="75" data-video="video/jumping_jacks.mp4">
+                            <div class="day-label">28</div>
+                            <div class="day-focus">Full Body</div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <main id="tracker-screen" class="page">
+                <h2 class="report-header">Report</h2>
+                <div class="report-card">
+                    <h3>WEIGHT (lb)</h3>
+                    <div class="weight-summary">
+                        <div>
+                            <div class="label">Starting</div>
+                            <div class="value" id="starting-weight">--- lb</div>
+                        </div>
+                        <div>
+                            <div class="label">Current</div>
+                            <div class="value" id="current-weight">--- lb</div>
+                        </div>
+                    </div>
+                    <div class="graph-container">
+                         <div class="graph-tooltip" id="weight-loss">--- lb</div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- ================================== -->
+            <!--   RESTORED WORKOUT LIST PAGES      -->
+            <!-- ================================== -->
+            <main id="beginner-workout-page" class="page workout-list-page">
+                <div class="header">
+                    <button class="back-button" data-target="levels-screen">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                        Back
+                    </button>
+                    <h2 class="workout-title">Beginner</h2>
+                </div>
+                <div class="exercise-list">
+                    <div class="list-exercise-item" data-name="Jumping Jacks" data-duration="30" data-video="video/jumping_jacks.mp4">
+                        <img src="exercise/jumping_jacks.png" alt="Jumping Jacks">
+                        <div class="exercise-info">
+                            <h4>Jumping Jacks</h4>
+                            <p>00:30</p>
+                        </div>
+                    </div>
+                    <div class="list-exercise-item" data-name="Pushups" data-reps="10" data-video="video/pushup.mp4">
+                        <img src="exercise/pushup.png" alt="Pushup">
+                        <div class="exercise-info">
+                            <h4>Pushups</h4>
+                            <p>10 Reps</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+            <main id="intermediate-workout-page" class="page workout-list-page">
+                <div class="header">
+                    <button class="back-button" data-target="levels-screen">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                        Back
+                    </button>
+                    <h2 class="workout-title">Intermediate</h2>
+                </div>
+                 <div class="exercise-list">
+                    <div class="list-exercise-item" data-name="Push-ups" data-reps="20" data-video="video/pushup.mp4">
+                        <img src="exercise/pushup.png" alt="Push-ups">
+                        <div class="exercise-info">
+                            <h4>Push-ups</h4>
+                            <p>20 Reps</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+            <main id="advanced-workout-page" class="page workout-list-page">
+                <div class="header">
+                    <button class="back-button" data-target="levels-screen">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                        Back
+                    </button>
+                    <h2 class="workout-title">Advanced</h2>
+                </div>
+                 <div class="exercise-list">
+                    <div class="list-exercise-item" data-name="Pull-ups" data-reps="15" data-video="video/pullup.mp4">
+                        <img src="exercise/pullup.png" alt="Pull-ups">
+                        <div class="exercise-info">
+                            <h4>Pull-ups</h4>
+                            <p>15 Reps</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <main id="exercise-player-screen" class="page">
+                <div class="header">
+                    <button class="player-back-button">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                    </button>
+                </div>
+                <h2 id="player-exercise-name">Exercise</h2>
+                <video id="exercise-video" loop muted playsinline src=""></video>
+                <div class="timer-container">
+                    <svg class="progress-ring" width="200" height="200">
+                        <circle class="progress-ring-circle" />
+                        <circle class="progress-ring-progress" id="progress-circle" />
+                    </svg>
+                    <div id="timer-display">00:00</div>
+                </div>
+                <button id="done-button">DONE</button>
+            </main>
+        </div>
+
+        <nav class="bottom-nav">
+            <button class="nav-button active" data-target="focus-areas-screen">
+                <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+                Home
+            </button>
+            <button class="nav-button" data-target="plan-screen">
+                <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                Plan
+            </button>
+            <button class="nav-button" data-target="tracker-screen">
+                <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="20" x2="18" y2="10"></line>
+                    <line x1="12" y1="20" x2="12" y2="4"></line>
+                    <line x1="6" y1="20" x2="6" y2="14"></line>
+                </svg>
+                Tracker
+            </button>
+            <button class="nav-button" data-target="levels-screen">
+                <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                </svg>
+                Levels
+            </button>
+            <button class="nav-button" id="logout-button" style="display: none;">
+                <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                Logout
+            </button>
+        </nav>
+    </div>
+
+    <!-- AUTHENTICATION MODAL -->
+    <div id="auth-modal">
+        <div class="auth-container">
+            <h2 id="auth-title">Login</h2>
+            <form id="auth-form">
+                <div class="form-group">
+                    <input type="email" id="auth-email" placeholder="Email" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="auth-password" placeholder="Password" required>
+                </div>
+                <div class="auth-error" id="auth-error-message"></div>
+                <button type="submit" id="auth-submit-button">Login</button>
+            </form>
+            <a id="auth-toggle-link" class="toggle-link">Need an account? Register</a>
+        </div>
+    </div>
+
+    <script>
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+          apiKey: "AIzaSyAOK-Ev6qTa0ABL0dTN-vSjel1jPSnNNAE",
+          authDomain: "fitness-d12f4.firebaseapp.com",
+          databaseURL: "https://fitness-d12f4-default-rtdb.firebaseio.com",
+          projectId: "fitness-d12f4",
+          storageBucket: "fitness-d12f4.firebasestorage.app",
+          messagingSenderId: "77784146203",
+          appId: "1:77784146203:web:11eb153f12d05da730b3be"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const App = {
+                timerInterval: null,
+                previousPageId: 'splash-screen',
+                currentPageId: 'splash-screen',
+                currentExerciseData: null,
+                userId: null,
+                progressCircle: null,
+                circumference: 2 * Math.PI * 90,
+
+                elements: {
+                    pages: document.querySelectorAll('.page'),
+                    navButtons: document.querySelectorAll('.nav-button'),
+                    levelCards: document.querySelectorAll('.level-card'),
+                    backButtons: document.querySelectorAll('.back-button, .player-back-button'),
+                    exerciseItems: document.querySelectorAll('.exercise-item, .list-exercise-item, .day-card'),
+                    player: {
+                        name: document.getElementById('player-exercise-name'),
+                        video: document.getElementById('exercise-video'),
+                        timer: document.getElementById('timer-display'),
+                        doneButton: document.getElementById('done-button'),
+                        progressCircle: document.getElementById('progress-circle')
+                    },
+                    auth: {
+                        modal: document.getElementById('auth-modal'),
+                        title: document.getElementById('auth-title'),
+                        form: document.getElementById('auth-form'),
+                        emailInput: document.getElementById('auth-email'),
+                        passwordInput: document.getElementById('auth-password'),
+                        submitButton: document.getElementById('auth-submit-button'),
+                        toggleLink: document.getElementById('auth-toggle-link'),
+                        errorMessage: document.getElementById('auth-error-message'),
+                    },
+                    logoutButton: document.getElementById('logout-button'),
+                    tracker: {
+                        startingWeight: document.getElementById('starting-weight'),
+                        currentWeight: document.getElementById('current-weight'),
+                        weightLoss: document.getElementById('weight-loss')
+                    }
+                },
+
+                init() {
+                    this.progressCircle = this.elements.player.progressCircle;
+                    this.progressCircle.style.strokeDasharray = `${this.circumference} ${this.circumference}`;
+                    this.progressCircle.style.strokeDashoffset = this.circumference;
+                    
+                    this.bindEvents();
+                    this.handleAuthStateChange();
+                    setTimeout(() => {
+                        if (this.currentPageId === 'splash-screen') {
+                            this.navigateTo('focus-areas-screen');
+                        }
+                    }, 2000);
+                },
+
+                bindEvents() {
+                    this.elements.navButtons.forEach(button => {
+                        button.addEventListener('click', () => this.navigateTo(button.dataset.target));
+                    });
+                    
+                    this.elements.levelCards.forEach(card => {
+                        card.addEventListener('click', () => this.navigateTo(card.dataset.target));
+                    });
+
+                    this.elements.backButtons.forEach(button => {
+                         button.addEventListener('click', (e) => {
+                             if(e.currentTarget.classList.contains('player-back-button')) {
+                                this.navigateTo(this.previousPageId);
+                             } else {
+                                this.navigateTo(button.dataset.target)
+                             }
+                         });
+                    });
+                    
+                    this.elements.exerciseItems.forEach(item => {
+                        item.addEventListener('click', () => {
+                            if (item.dataset.name === 'Rest' || !item.dataset.name) return;
+                            this.startExercise({ ...item.dataset });
+                        });
+                    });
+
+                    this.elements.player.doneButton.addEventListener('click', () => this.finishExercise());
+                    
+                    // Auth Events
+                    this.elements.auth.form.addEventListener('submit', (e) => this.handleAuthFormSubmit(e));
+                    this.elements.auth.toggleLink.addEventListener('click', () => this.toggleAuthMode());
+                    this.elements.logoutButton.addEventListener('click', () => auth.signOut());
+                },
+                
+                handleAuthStateChange() {
+                    auth.onAuthStateChanged(user => {
+                        if (user) {
+                            this.userId = user.uid;
+                            this.hideAuthModal();
+                            this.elements.logoutButton.style.display = 'flex';
+                            this.loadUserData();
+                            if (this.currentPageId === 'splash-screen' || !this.currentPageId) {
+                                this.navigateTo('focus-areas-screen');
+                            }
+                        } else {
+                            this.userId = null;
+                            this.elements.logoutButton.style.display = 'none';
+                            if (['tracker-screen', 'plan-screen'].includes(this.currentPageId)) {
+                                this.navigateTo('focus-areas-screen');
+                            }
+                            this.resetTrackerUI();
+                            this.resetPlanUI();
+                        }
+                    });
+                },
+
+                navigateTo(pageId) {
+                    if (!pageId) return;
+                    
+                    const protectedPages = ['tracker-screen', 'plan-screen'];
+                    if (protectedPages.includes(pageId) && !auth.currentUser) {
+                        this.showAuthModal();
+                        return;
+                    }
+
+                    if (pageId !== 'exercise-player-screen') {
+                       this.previousPageId = this.currentPageId;
+                    }
+                    this.currentPageId = pageId;
+
+                    // Add fade out effect
+                    document.querySelectorAll('.page.active').forEach(page => {
+                        page.style.opacity = '0';
+                        page.style.transform = 'translateY(20px)';
+                    });
+                    
+                    setTimeout(() => {
+                        this.elements.pages.forEach(p => p.classList.remove('active'));
+                        document.getElementById(pageId)?.classList.add('active');
+                        
+                        // Add fade in effect
+                        setTimeout(() => {
+                            document.getElementById(pageId).style.opacity = '1';
+                            document.getElementById(pageId).style.transform = 'translateY(0)';
+                        }, 10);
+                    }, 300);
+
+                    this.elements.navButtons.forEach(b => b.classList.remove('active'));
+                    const targetNav = pageId.includes('-workout-page') ? 'levels-screen' : pageId;
+                    document.querySelector(`.nav-button[data-target="${targetNav}"]`)?.classList.add('active');
+                },
+
+                startExercise(data) {
+                    if (!auth.currentUser) { this.showAuthModal(); return; }
+                    this.currentExerciseData = data;
+                    this.navigateTo('exercise-player-screen');
+                    this.elements.player.name.textContent = data.name;
+                    this.elements.player.video.src = data.video || ""; 
+                    this.elements.player.video.play().catch(e => console.log("Video requires user interaction to play."));
+                    let duration = data.duration ? parseInt(data.duration, 10) : Math.round(parseInt(data.reps, 10) * 2.5);
+                    this.startTimer(duration);
+                },
+                
+                async finishExercise() {
+                    clearInterval(this.timerInterval);
+                    this.elements.player.video.pause();
+                    if (this.currentExerciseData && this.currentExerciseData.day) {
+                        await this.recordDailyCheckIn();
+                    }
+                    this.currentExerciseData = null;
+                    this.navigateTo(this.previousPageId);
+                },
+                
+                async recordDailyCheckIn() {
+                    const day = this.currentExerciseData.day;
+                    const userRef = database.ref(`users/${this.userId}`);
+                    const dayCheckinRef = database.ref(`users/${this.userId}/checkIns/day${day}`);
+                    
+                    const snapshot = await dayCheckinRef.once('value');
+                    if (snapshot.exists()) { return; }
+
+                    await dayCheckinRef.set(true);
+
+                    const userSnapshot = await userRef.once('value');
+                    const userData = userSnapshot.val();
+                    const newWeight = (userData.currentWeight - 0.2).toFixed(1);
+                    await userRef.update({ currentWeight: parseFloat(newWeight) });
+                },
+
+                loadUserData() {
+                    if (!this.userId) return;
+                    database.ref(`users/${this.userId}`).on('value', (snapshot) => {
+                        const data = snapshot.val();
+                        if (data) {
+                            this.updateTrackerUI(data);
+                            this.updatePlanUI(data.checkIns || {});
+                        }
+                    });
+                },
+
+                updateTrackerUI(data) {
+                    this.elements.tracker.startingWeight.textContent = `${Number(data.startingWeight).toFixed(1)} lb`;
+                    this.elements.tracker.currentWeight.textContent = `${Number(data.currentWeight).toFixed(1)} lb`;
+                    const loss = (data.startingWeight - data.currentWeight).toFixed(1);
+                    this.elements.tracker.weightLoss.textContent = `-${loss} lb`;
+                },
+                
+                resetTrackerUI() {
+                     this.elements.tracker.startingWeight.textContent = `--- lb`;
+                     this.elements.tracker.currentWeight.textContent = `--- lb`;
+                     this.elements.tracker.weightLoss.textContent = `--- lb`;
+                },
+
+                updatePlanUI(checkIns) {
+                    document.querySelectorAll('.day-card[data-day]').forEach(card => {
+                        const day = card.dataset.day;
+                        if (checkIns[`day${day}`]) {
+                            card.classList.add('completed');
+                        } else {
+                            card.classList.remove('completed');
+                        }
+                    });
+                },
+                
+                resetPlanUI() {
+                    document.querySelectorAll('.day-card.completed').forEach(card => {
+                        card.classList.remove('completed');
+                    });
+                },
+
+                startTimer(duration) {
+                    clearInterval(this.timerInterval);
+                    let count = duration;
+                    this.elements.player.timer.textContent = this.formatTime(count);
+                    
+                    // Reset progress circle
+                    this.progressCircle.style.strokeDashoffset = this.circumference;
+                    
+                    this.timerInterval = setInterval(() => {
+                        count--;
+                        if (count >= 0) {
+                            this.elements.player.timer.textContent = this.formatTime(count);
+                            // Update progress circle
+                            const offset = this.circumference - (count / duration) * this.circumference;
+                            this.progressCircle.style.strokeDashoffset = offset;
+                        } else {
+                            clearInterval(this.timerInterval);
+                            this.elements.player.timer.textContent = "Done!";
+                            this.progressCircle.style.strokeDashoffset = 0;
+                        }
+                    }, 1000);
+                },
+
+                formatTime(seconds) {
+                    return `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`;
+                },
+                
+                showAuthModal(mode = 'login') {
+                    this.elements.auth.modal.classList.add('visible');
+                    this.setAuthMode(mode);
+                },
+                
+                hideAuthModal() {
+                    this.elements.auth.modal.classList.remove('visible');
+                    this.elements.auth.errorMessage.textContent = '';
+                    this.elements.auth.form.reset();
+                },
+                
+                setAuthMode(mode) {
+                    this.elements.auth.title.textContent = mode === 'login' ? 'Login' : 'Register';
+                    this.elements.auth.submitButton.textContent = mode === 'login' ? 'Login' : 'Register';
+                    this.elements.auth.toggleLink.textContent = mode === 'login' ? 'Need an account? Register' : 'Have an account? Login';
+                },
+                
+                toggleAuthMode() {
+                    this.setAuthMode(this.elements.auth.title.textContent === 'Login' ? 'register' : 'login');
+                },
+
+                handleAuthFormSubmit(e) {
+                    e.preventDefault();
+                    const email = this.elements.auth.emailInput.value;
+                    const password = this.elements.auth.passwordInput.value;
+                    const isLogin = this.elements.auth.title.textContent === 'Login';
+                    
+                    const handleAuthError = err => this.elements.auth.errorMessage.textContent = err.message;
+
+                    if (isLogin) {
+                        auth.signInWithEmailAndPassword(email, password).catch(handleAuthError);
+                    } else {
+                        auth.createUserWithEmailAndPassword(email, password)
+                            .then(userCredential => {
+                                const weight = prompt("Welcome! What is your current weight in pounds (e.g., 165.5)?");
+                                const initialWeight = parseFloat(weight);
+                                if (!isNaN(initialWeight) && initialWeight > 0) {
+                                    database.ref('users/' + userCredential.user.uid).set({
+                                        startingWeight: initialWeight,
+                                        currentWeight: initialWeight,
+                                        checkIns: {}
+                                    });
+                                } else {
+                                     database.ref('users/' + userCredential.user.uid).set({ startingWeight: 0, currentWeight: 0, checkIns: {} });
+                                }
+                            })
+                            .catch(handleAuthError);
+                    }
+                }
+            };
+
+            App.init();
+        });
+    </script>
+</body>
+</html>
